@@ -171,6 +171,72 @@ void main() {
     debugPrint('RESULT markers_pan: ${us.toStringAsFixed(0)} us/frame');
   });
 
+  testWidgets('benchmark: markers pan (mostly culled)', (tester) async {
+    final rng = math.Random(3);
+    final markers = [
+      for (var i = 0; i < 10000; i++)
+        Marker(
+          point: _randomNear(rng, _center, 1.0),
+          width: 20,
+          height: 20,
+          child: const SizedBox.shrink(),
+        ),
+    ];
+    final controller = MapController();
+    // Zoom 16: viewport much smaller than the 1° spread, so per-frame cost is
+    // dominated by the per-marker projection + cull check.
+    await tester.pumpWidget(
+      _app(controller, 16, [MarkerLayer(markers: markers)]),
+    );
+    final us = await _benchPans(tester, controller, 16);
+    debugPrint('RESULT markers_pan_mostly_culled: '
+        '${us.toStringAsFixed(0)} us/frame');
+  });
+
+  test('benchmark: marker projection kernel', () {
+    final rng = math.Random(5);
+    final camera = MapCamera(
+      crs: const Epsg3857(),
+      center: _center,
+      zoom: 14,
+      rotation: 0,
+      nonRotatedSize: const Size(800, 600),
+    );
+    const crs = Epsg3857();
+    final points = [
+      for (var i = 0; i < 10000; i++) _randomNear(rng, _center, 1.0),
+    ];
+    final projected = [for (final p in points) crs.projection.project(p)];
+    const frames = 100;
+
+    // Old per-frame path: full LatLng -> screen projection (trigonometry).
+    var sink = 0.0;
+    var sw = Stopwatch()..start();
+    for (var f = 0; f < frames; f++) {
+      for (final p in points) {
+        sink += camera.projectAtZoom(p).dx;
+      }
+    }
+    sw.stop();
+    final oldNs = sw.elapsedMicroseconds * 1000 / (frames * points.length);
+
+    // New per-frame path: linear transform of the cached projection.
+    final zoomScale = crs.scale(camera.zoom);
+    sw = Stopwatch()..start();
+    for (var f = 0; f < frames; f++) {
+      for (final p in projected) {
+        final (x, _) = crs.transform(p.dx, p.dy, zoomScale);
+        sink += x;
+      }
+    }
+    sw.stop();
+    final newNs = sw.elapsedMicroseconds * 1000 / (frames * points.length);
+
+    debugPrint('RESULT marker_projection_kernel: sink=${sink.isFinite} '
+        'full=${oldNs.toStringAsFixed(1)} ns/marker '
+        'cached=${newNs.toStringAsFixed(1)} ns/marker');
+  });
+
   test('benchmark: getOffsetsXY holed polygon (direct)', () {
     final rng = math.Random(11);
     final camera = MapCamera(
