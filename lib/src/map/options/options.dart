@@ -80,25 +80,26 @@ class MapOptions {
   /// additional zoom level restrictions.
   final double? maxZoom;
 
-  /// The background color of the [FlutterMap] widget, defaults to a
-  /// yellow grey-ish color.
+  /// Background color of the [FlutterMap] widget.
+  ///
+  /// It is usually recommended to set this to the background color of the app/
+  /// screen, such as the scaffold background color held within the inherited
+  /// theme, or at least a dark color if the app and map run in dark mode.
+  ///
+  /// Defaults to a light yellow-gray-ish color.
   final Color backgroundColor;
 
-  /// Color of the grid drawn over [backgroundColor], beneath all map layers.
+  /// Configuration of an optional grid to display on the map background.
   ///
-  /// The grid is visible while tiles load and is covered as opaque tiles fade
-  /// in. It also remains visible through transparent tiles and in empty areas.
-  /// Set to `null` to disable it. A fully transparent [backgroundColor] also
-  /// disables the grid.
+  /// By default, a grid is drawn on top of the [backgroundColor] with a stroke
+  /// color which will automatically work on most backgrounds.
   ///
-  /// Enabled by default with a subtle black line color (`0x14000000`).
-  final Color? backgroundGridColor;
-
-  /// Grid cell size in logical pixels at integer zoom levels.
+  /// Set to `null` to disable the grid. The grid is automatically disabled if
+  /// the [backgroundColor] is fully transparent.
   ///
-  /// The grid moves and rotates with the map, scaling between integer zoom
-  /// levels. Must be finite and at least 1. Defaults to 64.
-  final double backgroundGridSpacing;
+  /// A grid can be inserted anywhere within the map stack (or outside of the
+  /// map context) using a [PlaceholderGridLayer] manually.
+  final PlaceholderGridOptions? backgroundGridOptions;
 
   /// Callback that fires when the map gets tapped or clicked with the
   /// primary mouse button. This is normally the left mouse button. This
@@ -183,8 +184,7 @@ class MapOptions {
     this.minZoom,
     this.maxZoom,
     this.backgroundColor = const Color(0xFFE0E0E0),
-    this.backgroundGridColor = const Color(0x14000000),
-    this.backgroundGridSpacing = 64,
+    this.backgroundGridOptions = const PlaceholderGridOptions(),
     this.onTap,
     this.onSecondaryTap,
     this.onLongPress,
@@ -197,10 +197,7 @@ class MapOptions {
     this.onMapEvent,
     this.onMapReady,
     this.keepAlive = false,
-  }) : assert(
-          backgroundGridSpacing >= 1 && backgroundGridSpacing < double.infinity,
-          'backgroundGridSpacing must be finite and at least 1',
-        );
+  });
 
   /// The options of the closest [FlutterMap] ancestor. If this is called from a
   /// context with no [FlutterMap] ancestor, null is returned.
@@ -225,8 +222,7 @@ class MapOptions {
       minZoom == other.minZoom &&
       maxZoom == other.maxZoom &&
       backgroundColor == other.backgroundColor &&
-      backgroundGridColor == other.backgroundGridColor &&
-      backgroundGridSpacing == other.backgroundGridSpacing &&
+      backgroundGridOptions == other.backgroundGridOptions &&
       onTap == other.onTap &&
       onSecondaryTap == other.onSecondaryTap &&
       onLongPress == other.onLongPress &&
@@ -251,8 +247,7 @@ class MapOptions {
         minZoom,
         maxZoom,
         backgroundColor,
-        backgroundGridColor,
-        backgroundGridSpacing,
+        backgroundGridOptions,
         onTap,
         onSecondaryTap,
         onLongPress,

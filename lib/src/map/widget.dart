@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map/src/gestures/map_interactive_viewer.dart';
-import 'package:flutter_map/src/map/background.dart';
 import 'package:flutter_map/src/map/inherited_model.dart';
 
 /// An interactive geographical map
@@ -82,16 +81,15 @@ class _FlutterMapStateContainer extends State<FlutterMap>
   Widget build(BuildContext context) {
     super.build(context);
 
+    final backgroundColor = widget.options.backgroundColor;
+
     final widgets = ClipRect(
       child: Stack(
-        children: <Widget>[
-          Positioned.fill(
-            child: MapBackground(
-              color: widget.options.backgroundColor,
-              gridColor: widget.options.backgroundGridColor,
-              gridSpacing: widget.options.backgroundGridSpacing,
-            ),
-          ),
+        children: [
+          Positioned.fill(child: ColoredBox(color: backgroundColor)),
+          if (widget.options.backgroundGridOptions case final options?
+              when backgroundColor.a != 0)
+            Positioned.fill(child: PlaceholderGridLayer(gridOptions: options)),
           ...widget.children,
         ],
       ),
